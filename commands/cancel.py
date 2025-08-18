@@ -1,10 +1,11 @@
 from utils.persistence import save_event
 
+
 def register_cancel_command(bot, events):
     @bot.tree.command(name="cancelwolf", description="アモアス募集を流会にする")
     async def cancelwolf(interaction, event_id: str):
         if event_id not in events:
-            await interaction.response.send_message("❌ 部屋IDが見つかりません", ephemeral=True)
+            await interaction.response.send_message("❌ 部屋IDが見つかりませんでした", ephemeral=True)
             return
 
         event = events[event_id]
@@ -14,11 +15,13 @@ def register_cancel_command(bot, events):
         try:
             msg = await channel.fetch_message(event["message_id"])
             await msg.delete()
-        except: pass
+        except:
+            pass
         try:
             msg = await channel.fetch_message(event.get("list_message_id"))
             await msg.delete()
-        except: pass
+        except:
+            pass
 
         dt = event.get("datetime")
         from datetime import datetime
