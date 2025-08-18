@@ -6,9 +6,9 @@ from config import MAX_PARTICIPANTS
 
 
 def register_create_command(bot, events):
-    @bot.tree.command(name="createwolf", description="アモアス募集を作成")
+    @bot.tree.command(name="createroom", description="アモアス募集を作成")
     @app_commands.describe(date="募集日付 YYYY-MM-DD", time="開始時刻 HH:MM")
-    async def createwolf(interaction, date: str, time: str):
+    async def createroom(interaction, date: str, time: str):
         try:
             dt = datetime.fromisoformat(f"{date}T{time}")
             if dt.date() < (datetime.now() - timedelta(days=1)).date():

@@ -2,8 +2,8 @@ from utils.persistence import save_event
 
 
 def register_cancel_command(bot, events):
-    @bot.tree.command(name="cancelwolf", description="アモアス募集を流会にする")
-    async def cancelwolf(interaction, event_id: str):
+    @bot.tree.command(name="cancelamong", description="募集を流会にする")
+    async def cancelroom(interaction, event_id: str):
         if event_id not in events:
             await interaction.response.send_message("❌ 部屋IDが見つかりませんでした", ephemeral=True)
             return
