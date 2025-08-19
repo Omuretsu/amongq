@@ -1,45 +1,32 @@
-from discord import app_commands
-from datetime import datetime, timedelta
-from utils.persistence import save_event, list_events_by_date
-from utils.errors import send_error
-from config import MAX_PARTICIPANTS
+import discord
+from discord.ext import commands
+from discord import app_commands  # ← これを追加
 
 
-def register_create_command(bot, events):
-    @bot.tree.command(name="createroom", description="アモアス募集を作成")
-    @app_commands.describe(date="募集日付 YYYY-MM-DD", time="開始時刻 HH:MM")
-    async def createroom(interaction, date: str, time: str):
-        try:
-            dt = datetime.fromisoformat(f"{date}T{time}")
-            if dt.date() < (datetime.now() - timedelta(days=1)).date():
-                await send_error(interaction.channel, interaction.user, "❌ 過去の日付に対する部屋は作成できません")
-                return
-        except ValueError:
-            await send_error(interaction.channel, interaction.user, "❌ 日付・時刻のフォーマットが不正です")
-            return
+class CreateCommand(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
 
-        # 部屋ID生成
-        date_str = dt.strftime("%y%m%d")
-        existing_files = list_events_by_date(date_str)
-        seq = f"{int(max([f[6:8] for f in existing_files], default='0'))+1:02d}"
-        event_id = f"{date_str}{seq}"
 
-        events[event_id] = {
-            "datetime": dt.isoformat(),
-            # { "22:30": [{id, name, url, waitlist}, ...], ... }
-            "participants": {},
-            "channel_id": interaction.channel.id,
-            "message_id": None,
-            "list_message_id": None
-        }
-        save_event(event_id, events[event_id])
+@app_commands.command(name="create", description="新しい部屋を作成します")
+@app_commands.describe(room_id="部屋ID（任意）", capacity="定員（未指定で13人）")
+async def create(self, interaction: discord.Interaction, room_id: str, capacity: int = None):
+    if room_id in self.bot.room_data:
+        await interaction.response.send_message("その部屋IDはすでに存在します。", ephemeral=True)
+        return
 
-        # 募集メッセージ
-        month_day = dt.strftime("%m月%d日")
-        hour_min = dt.strftime("%H:%M")
-        content = f"@everyone\n🚨アモアス募集🚨\n{month_day} {hour_min}~\n部屋ID:{event_id}"
-        msg = await interaction.channel.send(content)
-        events[event_id]["message_id"] = msg.id
-        save_event(event_id, events[event_id])
+    # デフォルト値
+    if capacity is None:
+        capacity = 13
 
-        await interaction.response.send_message(f"募集作成完了（部屋ID: {event_id}）", ephemeral=True)
+    # 制限チェック
+    if not 4 <= capacity <= 15:
+        await interaction.response.send_message("部屋の定員は 4～15 の範囲で設定してください。", ephemeral=True)
+        return
+
+    self.bot.room_data[room_id] = {
+        "capacity": capacity,
+        "participants": [],
+        "waitlist": []
+    }
+    await interaction.response.send_message(f"部屋 {room_id} を作成しました。定員: {capacity}人", ephemeral=True)
