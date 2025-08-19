@@ -17,8 +17,11 @@ class SetDefaultCapacityCommands(commands.Cog):
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("管理者権限が必要です。", ephemeral=True)
             return
-        if new_capacity < 1:
-            await interaction.response.send_message("定員は1以上で指定してください。", ephemeral=True)
+        if new_capacity < 4:
+            await interaction.response.send_message("定員は4人以上で指定してください。", ephemeral=True)
+            return
+        if 15 < new_capacity:
+            await interaction.response.send_message("定員は15人以下で指定してください。", ephemeral=True)
             return
 
         # 永続化
