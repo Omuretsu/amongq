@@ -1,32 +1,39 @@
-from utils.persistence import save_event
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 
-def register_cancel_command(bot, events):
-    @bot.tree.command(name="cancelamong", description="募集を流会にする")
-    async def cancelroom(interaction, event_id: str):
-        if event_id not in events:
-            await interaction.response.send_message("❌ 部屋IDが見つかりませんでした", ephemeral=True)
+class Cancelcommands(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="cancel", description="部屋からキャンセルします")
+    @app_commands.describe(room_id="キャンセルする部屋ID")
+    async def cancel(self, interaction: discord.Interaction, room_id: str):
+        if room_id not in self.bot.room_data:
+            await interaction.response.send_message("その部屋は存在しません。", ephemeral=True)
             return
 
-        event = events[event_id]
-        channel = interaction.guild.get_channel(event["channel_id"])
+        # 参加者リストから削除
+        participant = next(
+            (p for p in self.bot.room_data[room_id]["participants"] if p["name"] == interaction.user.name), None)
+        if participant:
+            self.bot.room_data[room_id]["participants"].remove(participant)
+            # 補欠がいれば繰り上げ
+            if self.bot.room_data[room_id]["waitlist"]:
+                promoted = self.bot.room_data[room_id]["waitlist"].pop(0)
+                new_code = len(self.bot.room_data[room_id]["participants"]) + 1
+                self.bot.room_data[room_id]["participants"].append(
+                    {"name": promoted["name"], "code": new_code})
+            await interaction.response.send_message("参加をキャンセルしました。", ephemeral=True)
+            return
 
-        # 募集メッセージ・一覧メッセージ削除
-        try:
-            msg = await channel.fetch_message(event["message_id"])
-            await msg.delete()
-        except:
-            pass
-        try:
-            msg = await channel.fetch_message(event.get("list_message_id"))
-            await msg.delete()
-        except:
-            pass
+        # 補欠リストから削除
+        wait = next(
+            (w for w in self.bot.room_data[room_id]["waitlist"] if w["name"] == interaction.user.name), None)
+        if wait:
+            self.bot.room_data[room_id]["waitlist"].remove(wait)
+            await interaction.response.send_message("補欠参加をキャンセルしました。", ephemeral=True)
+            return
 
-        dt = event.get("datetime")
-        from datetime import datetime
-        dt_obj = datetime.fromisoformat(dt)
-        month_day = dt_obj.strftime("%m月%d日")
-        hour_min = dt_obj.strftime("%H:%M")
-
-        await channel.send(f"{month_day} {hour_min}からのゲーム（開催ID：{event_id}）は流会となりました")
+        await interaction.response.send_message("あなたはこの部屋に参加していません。", ephemeral=True)
