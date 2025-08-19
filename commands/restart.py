@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 def register_restart_command(bot):
     @bot.tree.command(name="restart", description="BOTを再起動します（管理者限定）")
     async def restart(interaction):
