@@ -1,56 +1,34 @@
-# ── .env からトークンを読み込む ──
-from utils.persistence import load_all_events
-from reactions.participant import handle_reaction_add, handle_reaction_remove
-from commands.restart import register_restart_command
-from commands.cancel import register_cancel_command
-from commands.create import register_create_command
-from config import BOT_TOKEN
-from discord.ext import commands
 import discord
-from dotenv import load_dotenv
-import os
+from discord.ext import commands
 
-load_dotenv()  # 同階層の .env を読み込む
-TOKEN = os.getenv("DISCORD_TOKEN")
-
+from commands.create import CreateCommands
+from commands.cancel import CancelCommands
+from reactions.participant import ListCommands
+from commands.set_capacity import SetCapacityCommands
+from commands.set_default_capacity import SetDefaultCapacityCommands  # 管理者用コマンド
 
 intents = discord.Intents.default()
 intents.message_content = True
-intents.reactions = True
-intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-events = load_all_events()
+
+# データ保存用（全commandsで共有）
+bot.room_data = {}
+
+# commandsのロード
+bot.add_cog(CreateCommands(bot))
+bot.add_cog(CancelCommands(bot))
+bot.add_cog(ListCommands(bot))
+bot.add_cog(SetCapacityCommands(bot))
 
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
-    await bot.tree.sync()
+    print(f"{bot.user} is ready!")
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands")
+    except Exception as e:
+        print(e)
 
-register_create_command(bot, events)
-register_cancel_command(bot, events)
-register_restart_command(bot)
-
-
-@bot.event
-async def on_raw_reaction_add(payload):
-    guild = bot.get_guild(payload.guild_id)
-    user = guild.get_member(payload.user_id)
-    channel = bot.get_channel(payload.channel_id)
-    message = await channel.fetch_message(payload.message_id)
-    reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-    await handle_reaction_add(reaction, user, events, bot)
-
-
-@bot.event
-async def on_raw_reaction_remove(payload):
-    guild = bot.get_guild(payload.guild_id)
-    user = guild.get_member(payload.user_id)
-    channel = bot.get_channel(payload.channel_id)
-    message = await channel.fetch_message(payload.message_id)
-    reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-    await handle_reaction_remove(reaction, user, events, bot)
-
-# .env から読み込んだトークンで起動
-bot.run(TOKEN)
+bot.run("ここにトークン")
