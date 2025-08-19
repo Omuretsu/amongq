@@ -52,6 +52,6 @@ class SetCapacityCommands(
 
         self.bot.room_data[room_id]["capacity"] = new_capacity
         await interaction.response.send_message(
-            f"部屋 {room_id} の定員を {new_capacity} 人に変更しました。",
+            f"部屋 {room_id} の定員を {current_capacity} 人から {new_capacity} 人に変更しました。",
             ephemeral=True
         )
