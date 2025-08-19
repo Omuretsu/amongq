@@ -10,12 +10,12 @@ class SetDefaultCapacityCommands(commands.Cog):
 
     @app_commands.command(
         name="setdefaultcapacity",
-        description="全体のデフォルト部屋定員を変更します（管理者専用）"
+        description="今後作成される部屋の定員を変更します（サーバー管理者専用）"
     )
-    @app_commands.describe(new_capacity="新しいデフォルト定員")
+    @app_commands.describe(new_capacity="新しい定員")
     async def set_default_capacity(self, interaction: discord.Interaction, new_capacity: int):
         if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("管理者権限が必要です。", ephemeral=True)
+            await interaction.response.send_message("サーバーの管理者権限が必要です。", ephemeral=True)
             return
         if new_capacity < 1:
             await interaction.response.send_message("定員は1以上で指定してください。", ephemeral=True)
@@ -23,7 +23,7 @@ class SetDefaultCapacityCommands(commands.Cog):
 
         # 永続化
         save_default_capacity(new_capacity)
-        await interaction.response.send_message(f"全体のデフォルト定員を {new_capacity} に変更しました。", ephemeral=True)
+        await interaction.response.send_message(f"今後作成される部屋の定員を {new_capacity} 人に変更しました。", ephemeral=True)
 
 
 async def setup(bot):
